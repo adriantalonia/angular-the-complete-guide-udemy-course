@@ -9,8 +9,13 @@ This README provides a basic overview of Angular's essential concepts, including
 - [Components](#components)
 - [Templates](#templates)
 - [Data Binding](#data-binding)
+- [Using Getters in Angular](#using-getters-in-angular)
+- [Adding Event Listeners in Angular](#adding-event-listeners-in-angular)
+- [Defining Event Handler Methods](#defining-event-handler-methods)
+- [Connecting Events to Methods](#connecting-events-to-methods)
+- [Managing State in Angular](#managing-state-in-angular)
 - [Key Differences Between Attributes and Properties](#key-differences-between-attributes-and-properties)
-
+- [Angular Signals Overview](#angular-signals-overview)
 ---
 
 ## Components
@@ -310,4 +315,94 @@ Whenever the user clicks the button, a new user is randomly selected and display
 
 ## Conclusion
 Managing state in Angular is as simple as modifying component properties. There is no need for complex configurations—just update the property bound to the template, and Angular takes care of re-rendering the UI accordingly.
+
+---
+
+# Angular Signals Overview
+
+## Introduction
+
+Angular provides multiple ways to manage state and update the UI. Traditionally, Angular has relied on `Zone.js` for change detection, but with Angular 16, a new mechanism called **Signals** was introduced. This document provides an overview of Signals, their benefits, and how to use them in an Angular application.
+
+## What are Signals?
+
+Signals are a new way to manage reactive state in Angular. They act as special containers that store values and notify Angular whenever those values change. This allows Angular to efficiently track dependencies and update the UI when necessary.
+
+### Benefits of Signals
+
+- **Efficient Change Detection:** Unlike traditional state management mechanisms that rely on `Zone.js`, Signals allow Angular to update only the necessary UI components.
+- **Automatic Tracking:** Angular automatically sets up subscriptions to Signals, ensuring that dependent parts of the UI update efficiently.
+- **Fine-Grained UI Updates:** Instead of checking the entire application state, Angular only updates the components affected by a Signal change.
+
+## Using Signals in Angular
+
+### Creating a Signal
+
+To create a Signal, import the `signal` function from `@angular/core` and initialize it with an initial value:
+
+```typescript
+import { signal } from '@angular/core';
+
+export class UserComponent {
+  selectedUser = signal({ name: 'John Doe', avatar: 'avatar1.png' });
+}
+```
+
+### Reading a Signal in a Template
+
+To access the value stored in a Signal, call it as a function:
+
+```html
+<p>{{ selectedUser().name }}</p>
+<img [src]="'assets/users/' + selectedUser().avatar" alt="User Avatar">
+```
+
+### Updating a Signal
+
+To update the value of a Signal, use the `set` method:
+
+```typescript
+this.selectedUser.set({ name: 'Jane Doe', avatar: 'avatar2.png' });
+```
+
+## Computed Signals
+
+Computed Signals allow you to derive new values from existing Signals. Use the `computed` function to create such values:
+
+```typescript
+import { computed } from '@angular/core';
+
+export class UserComponent {
+  selectedUser = signal({ name: 'John Doe', avatar: 'avatar1.png' });
+  imagePath = computed(() => `assets/users/${this.selectedUser().avatar}`);
+}
+```
+
+In the template, you still need to execute the computed value like a function:
+
+```html
+<img [src]="imagePath()" alt="User Avatar">
+```
+
+## Comparison with Traditional State Management
+
+Before Signals, Angular relied on `Zone.js` for state management. `Zone.js` works by wrapping components in **zones** and listening for any event (e.g., button clicks) that might trigger a state change. Then, it checks all components for changes, which can lead to performance inefficiencies.
+
+With Signals:
+
+- Angular updates only the components that depend on a changed Signal.
+- No need for explicit change detection mechanisms (`ChangeDetectorRef`, `NgZone`, etc.).
+- More predictable and optimized state updates.
+
+## Adoption Considerations
+
+- **Backward Compatibility:** Signals were introduced in Angular 16 and became more stable in Angular 17. If working on older projects, Signals might not be an option.
+- **Learning Curve:** The syntax is slightly more verbose than traditional state management, but the performance improvements make it worthwhile.
+- **Gradual Adoption:** You can integrate Signals incrementally within a project instead of replacing all state management mechanisms at once.
+
+## Conclusion
+
+Signals introduce a modern, efficient way to manage state in Angular applications. They reduce reliance on `Zone.js`, provide fine-grained control over UI updates, and enhance performance. While Signals are still relatively new, they are a promising addition to the Angular ecosystem, and developers should consider adopting them for state management.
+
+For a deeper dive into Signals, refer to the dedicated Signals section in the full course.
 
