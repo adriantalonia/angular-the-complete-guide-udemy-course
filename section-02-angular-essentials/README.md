@@ -16,6 +16,7 @@ This README provides a basic overview of Angular's essential concepts, including
 - [Managing State in Angular](#managing-state-in-angular)
 - [Key Differences Between Attributes and Properties](#key-differences-between-attributes-and-properties)
 - [Angular Signals Overview](#angular-signals-overview)
+- [Understanding the Non-Null Assertion Operator (`!`) in TypeScript](#understanding-the-non-null-assertion-operator--in-typescript)
 ---
 
 ## Components
@@ -405,4 +406,240 @@ With Signals:
 Signals introduce a modern, efficient way to manage state in Angular applications. They reduce reliance on `Zone.js`, provide fine-grained control over UI updates, and enhance performance. While Signals are still relatively new, they are a promising addition to the Angular ecosystem, and developers should consider adopting them for state management.
 
 For a deeper dive into Signals, refer to the dedicated Signals section in the full course.
+
+---
+
+ # Understanding the Non-Null Assertion Operator (`!`) in TypeScript
+
+In TypeScript, the non-null assertion operator (`!`) is used to tell the compiler that a particular value will never be `null` or `undefined`. This can be particularly useful when working with properties in Angular components, where a value might not be initialized immediately but will definitely be assigned before usage.
+
+## Example: `@Input() avatar!: string;`
+
+In Angular, `@Input()` is used to receive data from a parent component. The syntax:
+
+```typescript
+@Input() avatar!: string;
+```
+
+means that `avatar` is a required input, but it is not initialized within the class at the time of declaration.
+
+### Explanation of `!`
+
+The `!` operator in `avatar!: string;` is a **non-null assertion operator**, which tells TypeScript:
+
+- "I know this property will be initialized before it is used."
+- "Don't give me a compile-time error even though it lacks an initial value."
+
+Without the `!`, TypeScript might show an error:
+
+```typescript
+@Input() avatar: string; // Error: Property 'avatar' has no initializer and is not definitely assigned in the constructor.
+```
+
+## Usage in an Angular Component
+
+### Parent Component (Passing Data)
+
+```typescript
+@Component({
+  selector: 'app-parent',
+  template: `<app-child [avatar]="userAvatar"></app-child>`
+})
+export class ParentComponent {
+  userAvatar: string = 'assets/user-avatar.png';
+}
+```
+
+### Child Component (Receiving Data with `@Input()`)
+
+```typescript
+@Component({
+  selector: 'app-child',
+  template: `<img [src]="avatar" alt="User Avatar">`
+})
+export class ChildComponent {
+  @Input() avatar!: string;
+}
+```
+
+Here, `avatar` will be assigned when the `ParentComponent` provides a value, so using `!` prevents TypeScript from throwing an error about possible uninitialized values.
+
+## Alternative Approach: Constructor Initialization
+
+If you want to avoid using `!`, you can provide an initializer or use a default value:
+
+```typescript
+@Input() avatar: string = 'assets/default-avatar.png';
+```
+
+Or mark it as optional using `?`:
+
+```typescript
+@Input() avatar?: string;
+```
+
+However, if you **know** that the property will always be assigned (e.g., it's always provided by the parent component), the non-null assertion operator (`!`) is a concise way to handle it.
+
+## Summary
+
+- `!` tells TypeScript that a value **will** be initialized before use, even if not explicitly assigned in the class.
+- It is useful in Angular `@Input()` properties where values come from the parent component.
+- It prevents unnecessary TypeScript errors but should be used carefully.
+- Alternative approaches include providing default values or making the property optional (`?`).
+
+---
+
+# Required Inputs in Angular
+
+## What Are Required Inputs?
+In Angular, `@Input()` properties are used to pass data from a parent component to a child component. By default, an input property is optional, meaning the child component will not throw an error if the parent does not provide a value.
+
+However, in some cases, you may want to enforce that a value is always provided. This is where required inputs come into play.
+
+## Enforcing Required Inputs
+There are multiple ways to make an `@Input()` required:
+
+### 1. Using Non-Nullable Assertion (`!`)
+```typescript
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-user-card',
+  template: `<p>User: {{ username }}</p>`
+})
+export class UserCardComponent {
+  @Input() username!: string; // Ensures username must be provided
+}
+```
+This approach assumes that the value will always be assigned before being used, but it does not prevent runtime issues if the input is missing.
+
+### 2. Using `@Input` with a Setter and Validation
+```typescript
+import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-user-card',
+  template: `<p>User: {{ username }}</p>`
+})
+export class UserCardComponent {
+  private _username!: string;
+
+  @Input()
+  set username(value: string) {
+    if (!value) {
+      throw new Error('Input username is required');
+    }
+    this._username = value;
+  }
+
+  get username(): string {
+    return this._username;
+  }
+}
+```
+This approach enforces that the input cannot be empty and provides a meaningful error message if it is missing.
+
+### 3. Using `@Input` with Default Values
+```typescript
+@Component({
+  selector: 'app-user-card',
+  template: `<p>User: {{ username }}</p>`
+})
+export class UserCardComponent {
+  @Input() username: string = 'Default User';
+}
+```
+Setting a default value ensures that the component always has a valid value, even if none is provided by the parent.
+
+## Best Practices
+- **Use non-null assertion (`!`)** when you are sure the parent component will provide the value.
+- **Use setter validation** when you want to enforce a required input at runtime.
+- **Provide default values** when an optional fallback makes sense.
+
+## Example Usage
+```html
+<app-user-card [username]="'John Doe'"></app-user-card>
+<!-- This works fine -->
+
+<app-user-card></app-user-card>
+<!-- Will throw an error if using setter validation -->
+```
+
+By implementing required inputs correctly, you ensure better type safety and runtime validation in your Angular applications.
+
+---
+
+# Angular Output Properties and Event Emitters
+
+## Introduction
+In Angular, components not only accept inputs but also need to emit custom events. This allows for interaction between child and parent components. The `@Output` decorator, along with `EventEmitter`, enables components to send data to their parent components when specific events occur.
+
+## Why Use Output Properties?
+Custom events are necessary when a child component needs to notify its parent about user actions or other changes. In our example, clicking a user should notify the parent component to display related tasks.
+
+## Setting Up an Output Property
+To define an output property, follow these steps:
+
+1. **Import `Output` and `EventEmitter` from `@angular/core`.**
+2. **Create an `@Output()` property** and initialize it as a new `EventEmitter` instance.
+3. **Use the `.emit()` method** to send data when an event occurs.
+
+### Example: User Component
+```typescript
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+
+@Component({
+  selector: 'app-user',
+  template: `<button (click)="onSelectUser()">Select User</button>`
+})
+export class UserComponent {
+  @Input() id!: string; // Required Input
+  @Output() select = new EventEmitter<string>();
+
+  onSelectUser() {
+    this.select.emit(this.id); // Emit user ID when clicked
+  }
+}
+```
+
+### Example: Parent (App) Component
+```typescript
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  template: `
+    <app-user *ngFor="let user of users"
+              [id]="user.id"
+              (select)="onSelectUser($event)">
+    </app-user>`
+})
+export class AppComponent {
+  users = [
+    { id: 'u1' },
+    { id: 'u2' },
+    { id: 'u3' }
+  ];
+
+  onSelectUser(id: string) {
+    console.log('Selected user with id:', id);
+  }
+}
+```
+
+## Understanding `$event`
+When binding a custom event, Angular provides a special `$event` variable that captures the emitted data. In this case, `$event` holds the `id` of the selected user.
+
+```html
+<app-user (select)="onSelectUser($event)"></app-user>
+```
+
+## Summary
+- Use `@Output()` and `EventEmitter` to create custom events in Angular.
+- Use the `.emit()` method to send data to the parent component.
+- Capture emitted values using the `$event` variable.
+- Listen for events using **event binding** `()` in the parent template.
+
+By following these steps, components can effectively communicate and interact, making your Angular applications more dynamic and responsive. 🚀
+
 
