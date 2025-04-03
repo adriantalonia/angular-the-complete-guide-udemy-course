@@ -41,6 +41,7 @@ export class UserComponent {
   @Input({ required: true }) avatar!: string;
   @Input({ required: true }) name!: string;
   @Output() select = new EventEmitter<string>();
+  //@Output() selectedName = new EventEmitter<string>();
 
   // output function approach
   //select = output<string>();
@@ -61,8 +62,9 @@ export class UserComponent {
 
   onSelectUser() {
     this.select.emit(this.id);
+    //this.selectedName.emit(this.name);
   }
 
-
+  
 }
 
